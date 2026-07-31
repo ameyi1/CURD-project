@@ -1,0 +1,8 @@
+{"level":"info","time":"2026-07-31 22:49:43","msg":"后端服务完成","listen_port":8080}
+{"level":"panic","time":"2026-07-31 22:49:43","msg":"启动错误","error":"listen tcp: address 8080: missing port in address"}
+{"level":"info","time":"2026-07-31 22:50:09","msg":"后端服务完成","listen_port":8080}
+{"level":"info","time":"2026-07-31 22:53:56","msg":"后端服务完成","listen_port":8080}
+{"level":"panic","time":"2026-07-31 22:53:56","msg":"启动错误","error":"listen tcp :8080: bind: Only one usage of each socket address (protocol/network address/port) is normally permitted."}
+{"level":"info","time":"2026-07-31 22:54:52","msg":"后端服务完成","listen_port":8080}
+{"level":"panic","time":"2026-07-31 22:54:52","msg":"启动错误","error":"listen tcp :8080: bind: Only one usage of each socket address (protocol/network address/port) is normally permitted."}
+{"level":"info","time":"2026-07-31 22:57:27","msg":"后端服务完成","listen_port":8080}
