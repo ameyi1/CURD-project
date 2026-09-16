@@ -3,6 +3,7 @@ package middleware
 import "github.com/gin-gonic/gin"
 
 // 跨域中间件
+//纯抄的一点也不会
 func Cors() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Header("Access-Control-Allow-Origin", "*")

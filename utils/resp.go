@@ -12,16 +12,21 @@ type Response struct {
 // 成功返回
 func Success(c *gin.Context, data interface{}, msg string) {
 	c.JSON(200, Response{
-		Code: 200,
+		Code: CodeSuccess,
 		Msg:  msg,
 		Data: data,
 	})
 }
 
 // 失败返回
-func Fail(c *gin.Context, msg string) {
+// 兼容历史调用方式：Fail(c, "msg") 和 Fail(c, "msg", 401)
+func Fail(c *gin.Context, msg string, code ...int) {
+	errCode := CodeServerError
+	if len(code) > 0 {
+		errCode = code[0]
+	}
 	c.JSON(200, Response{
-		Code: 400,
+		Code: errCode,
 		Msg:  msg,
 		Data: nil,
 	})

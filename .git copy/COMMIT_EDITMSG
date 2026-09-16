@@ -1,0 +1,42 @@
+
+# Please enter the commit message for your changes. Lines starting
+# with '#' will be ignored, and an empty message aborts the commit.
+#
+# On branch main
+# Your branch is up to date with 'origin/main'.
+#
+# Changes to be committed:
+#	renamed:    service/user_handler.go -> service/user_service.go
+#
+# Changes not staged for commit:
+#	modified:   api/article_handler.go
+#	modified:   api/user.go
+#	modified:   api/user_handler.go
+#	modified:   app.log
+#	modified:   config/db.go
+#	modified:   dao/article_dao.go
+#	modified:   dao/user_dao.go
+#	modified:   gin-study.db
+#	modified:   go.mod
+#	modified:   go.sum
+#	modified:   main.go
+#	modified:   middleware/auth.go
+#	modified:   model/article.go
+#	modified:   service/article_service.go
+#	modified:   service/user_service.go
+#	deleted:    sql
+#	modified:   utils/jwt.go
+#	modified:   utils/resp.go
+#
+# Untracked files:
+#	api/idempotency_handler.go
+#	api/user.handler_test.go
+#	config/redis.go
+#	middleware/idempotency.go
+#	middleware/logger.go
+#	middleware/ratelimit.go
+#	middleware/request_id.go
+#	service/user_cache_service.go
+#	service/user_service_test.go
+#	utils/errors.go
+#

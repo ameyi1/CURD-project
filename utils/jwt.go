@@ -1,14 +1,164 @@
 package utils
 
 import (
+	"context"
+	"errors"
 	"gin-study/config"
+
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/redis/go-redis/v9"
+	"go.uber.org/zap"
 )
 
-// 这是加自动改变全局变量的东西的，但懒得改了，而且那个方便复习
 type Claims struct {
+	UserID uint   `json:"userid"`
+	Type   string `json:"type"`
+	jwt.RegisteredClaims
+}
+
+func GenerateToken(userID uint) (accesstoken, refreashtoken string, err error) {
+
+	//短期token
+	//结构体
+	accessclaims := &Claims{
+		UserID: userID,
+		Type:   "Accesstoken",
+		//忘了
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(config.GlobalConfig.Jwt.Expire) * time.Hour)),
+		},
+	}
+	//创建token
+	accessjwt := jwt.NewWithClaims(jwt.SigningMethodHS256, accessclaims)
+	//加密token,注意遗忘了，是对[]byte(config.GlobalConfig.Jwt.Secret))注意这个[]byte()
+	accesstoken, err = accessjwt.SignedString([]byte(config.GlobalConfig.Jwt.Secret))
+	if err != nil {
+		return "", "", err
+	}
+	//生成长期token
+	refreashclaims := &Claims{
+		UserID: userID,
+		Type:   "Refrashtoken",
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(config.GlobalConfig.Jwt.Expire) * 7 * time.Hour)),
+		}}
+	refreashjwt := jwt.NewWithClaims(jwt.SigningMethodHS256, refreashclaims)
+	refreashtoken, err = refreashjwt.SignedString([]byte(config.GlobalConfig.Jwt.Secret))
+	//加上redis,把生成的refreshtoken存到redis里面
+	ctx := context.Background()
+	key := "jwt:refreashtoken" + refreashtoken
+	ttl := time.Duration(config.GlobalConfig.Jwt.Expire) * 7 * time.Hour
+	if err := config.RedisClient.Set(ctx, key, userID, ttl).Err(); err != nil { //主要是这句，config.RedisClient.Set
+		Log.Error("保存refreashtoken到redis失败", zap.Error(err))
+		return "", "", err
+	}
+
+	if err != nil {
+		return "", "", err
+	}
+	return accesstoken, refreashtoken, nil
+} //解析短期token
+func ParseToken(accesstoken string) (uint, error) {
+	claims := &Claims{}
+	token, err := jwt.ParseWithClaims(accesstoken, claims, func(t *jwt.Token) (interface{}, error) {
+		return []byte(config.GlobalConfig.Jwt.Secret), nil
+	})
+	if err != nil {
+		return 0, err
+	}
+	if !token.Valid {
+		return 0, errors.New("token无效")
+	}
+	if claims.Type != "Accesstoken" {
+		return 0, errors.New("token类型错误")
+	}
+	return claims.UserID, nil
+}
+
+// 解析长期token
+func ParseRefreashToken(refreashtoken string) (uint, error) {
+	claims := &Claims{}
+	refreshtoken, err := jwt.ParseWithClaims(refreashtoken, claims, func(t *jwt.Token) (interface{}, error) {
+		return []byte(config.GlobalConfig.Jwt.Secret), nil
+	})
+	if err != nil {
+		return 0, err
+	}
+	if !refreshtoken.Valid {
+		return 0, errors.New("token无效")
+	}
+	if claims.Type != "Refreashtoken" {
+		return 0, errors.New("token类型错误")
+	}
+	return claims.UserID, nil
+
+}
+
+// 根据refreashtoken生成新token,新知识点
+func Refrashtoken(c *gin.Context) {
+	var req struct {
+		Refreashtoken string `json:"refreashtoken" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		Fail(c, "参数错误", CodeInvalidParam)
+		return
+	}
+	//接入redis来检查这个refreashtoken
+	ctx := context.Background()
+	key := "jwt:refreashtoken" + req.Refreashtoken
+	_, err := config.RedisClient.Get(ctx, key).Result()
+	//如果没查到东西
+	if err == redis.Nil {
+		Fail(c, "token过期或者失效了", CodeUnauthorized)
+		return
+	} else if err != nil { //或者服务出错了
+		Log.Error("检查redis失败", zap.Error(err))
+		Fail(c, "检查redis失败可能是服务出现问题", CodeServerError)
+		return
+	}
+
+	userId, err2 := ParseRefreashToken(req.Refreashtoken)
+	if err2 != nil {
+		Fail(c, "refresh token无效", CodeUnauthorized)
+		return
+	}
+	newaccesstoken, newrefreashtoken, err3 := GenerateToken(userId)
+	if err3 != nil {
+		Fail(c, "生成新token失败", CodeServerError)
+		return
+	}
+	Success(c, gin.H{
+		"access_token":  newaccesstoken,
+		"refresh_token": newrefreashtoken,
+		"user":          userId,
+	}, "登录成功")
+}
+
+// 再添加一个推出主动删除refreashtoken的函数
+func Logout(c *gin.Context) {
+	var req struct {
+		Refreashtoken string `json:"refreashtoken" binding:"required"`
+	}
+	key := "jwt:refreashtoken:" + req.Refreashtoken
+	if err := c.ShouldBindJSON(&req); err != nil {
+		Fail(c, "参数错误", CodeInvalidParam)
+		return
+	}
+	ctx := context.Background()
+	err := config.RedisClient.Del(ctx, key).Err()
+	if err != nil {
+		Log.Error("退出登录删除 Redis Key 失败", zap.Error(err))
+		Fail(c, "服务器内部错误", CodeServerError)
+		return
+	}
+	Success(c, nil, "退出成功")
+}
+
+// 这是加自动改变全局变量的东西的，但懒得改了，而且那个方便复习
+/*type Claims struct {
 	UserID uint `json:"userid"`
 	jwt.RegisteredClaims
 }

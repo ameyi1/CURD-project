@@ -14,7 +14,7 @@ var DB *gorm.DB
 // InitDB 初始化数据库连接
 func InitDB() {
 
-	// 连接sqlite
+	// 连接sqlite,之后一定要换为MySQL
 	dbName := GlobalConfig.Mysql.Dbname
 	db, err := gorm.Open(sqlite.Open(dbName), &gorm.Config{})
 
@@ -29,5 +29,15 @@ func InitDB() {
 	db.Exec("CREATE INDEX idx_articles_title ON articles(title);")
 
 	// 赋值给全局DB，给其他地方用
+	DB = db
+}
+
+// InitTestDB 初始化测试用内存数据库
+func InitTestDB() {
+	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
+	if err != nil {
+		panic("测试数据库连接失败: " + err.Error())
+	}
+	db.AutoMigrate(&model.User{}, &model.Article{})
 	DB = db
 }

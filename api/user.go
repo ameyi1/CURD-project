@@ -1,5 +1,7 @@
 package api
 
+/*
+
 import (
 	"strconv"
 
@@ -14,26 +16,26 @@ import (
 )
 
 // RegisterUserRoutes 注册用户相关路由
-func RegisterUserRoutes(r *gin.RouterGroup) {
+func registerUserRoutes(r *gin.RouterGroup) {
 
 	// 增
 	r.POST("/create", func(c *gin.Context) {
-		var user model.User
-		err := c.ShouldBindJSON(&user)
+		var user model.User            //定义user结构体，方便传
+		err := c.ShouldBindJSON(&user) //这是接收前端发的信息的
 		if err != nil {
 			utils.Log.Error("数据错误：", zap.Error(err))
 			utils.Fail(c, "数据错误："+err.Error())
 			return
 		}
-		encryptPwd, err := utils.EncryptPassword(user.Password)
+		encryptPwd, err := utils.EncryptPassword(user.Password) //先把前端发的密码加密为一个副本
 		if err != nil {
 			utils.Log.Error("加密失败：", zap.Error(err))
 			utils.Fail(c, "加密失败")
 			return
 		}
-		user.Password = encryptPwd
-		txErr := config.DB.Transaction(func(tx *gorm.DB) error {
-			if err := tx.Create(&user).Error; err != nil {
+		user.Password = encryptPwd                               //把副本赋值给原本的密码，这时候user。password已经变为加密状态
+		txErr := config.DB.Transaction(func(tx *gorm.DB) error { //先声明事务在对数据库的操作中全部替换为tx
+			if err := tx.Create(&user).Error; err != nil { //创建
 				return err
 			}
 			DefaultArticle := model.Article{
@@ -50,6 +52,7 @@ func RegisterUserRoutes(r *gin.RouterGroup) {
 		if txErr != nil {
 			utils.Log.Error("创建用户+默认文章事务执行失败", zap.Error(txErr), zap.String("username", user.Username))
 			utils.Fail(c, "用户创建失败")
+			return
 		}
 
 		utils.Success(c, user, "已完成创建")
@@ -170,7 +173,7 @@ func RegisterUserRoutes(r *gin.RouterGroup) {
 			return
 		}
 		//4开始引用generatetoken函数了，这里注意只有user这单个用户信息的变量，但之后可能会有多个注意，而且只是判断这个合法不合法无法判断正误
-		token, err := utils.GenerateToken(user.ID)
+		token, refreashtoken, err := utils.GenerateToken(user.ID)
 		if err != nil {
 			utils.Log.Error("生成Token失败:", zap.Error(err))
 			utils.Fail(c, "生成Token失败")
@@ -179,7 +182,7 @@ func RegisterUserRoutes(r *gin.RouterGroup) {
 
 		//5返回Token给前端
 
-		utils.Success(c, gin.H{"token": token, "user": user}, "登录成功")
+		utils.Success(c, gin.H{"token": token, "refreashtoken": refreashtoken, "user": user}, "登录成功")
 		utils.Log.Info("登录成功", zap.String("username", user.Username), zap.Uint("userID", user.ID))
 	})
 }
@@ -281,3 +284,4 @@ func RegisterArticleRoutes(r *gin.RouterGroup) {
 	})
 
 }
+*/

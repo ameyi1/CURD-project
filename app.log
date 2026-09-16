@@ -6,3 +6,5 @@
 {"level":"info","time":"2026-07-31 22:54:52","msg":"后端服务完成","listen_port":8080}
 {"level":"panic","time":"2026-07-31 22:54:52","msg":"启动错误","error":"listen tcp :8080: bind: Only one usage of each socket address (protocol/network address/port) is normally permitted."}
 {"level":"info","time":"2026-07-31 22:57:27","msg":"后端服务完成","listen_port":8080}
+{"level":"info","time":"2026-08-02 10:26:20","msg":"后端服务完成","listen_port":8080}
+{"level":"info","time":"2026-08-21 23:02:38","msg":"后端服务完成","listen_port":8080}
