@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"gin-study/config"
+	"gin-study/utils"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -14,6 +15,7 @@ import (
 func TestGetuser_NotFound(t *testing.T) {
 	//1准备阶段=========================
 	config.InitTestDB()
+	utils.Initzap()
 	//让gin不输出调试日志
 	gin.SetMode(gin.TestMode)
 	r := gin.New()              //创建一个干净的引擎

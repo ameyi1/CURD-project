@@ -7,6 +7,7 @@ import (
 	"gin-study/utils"
 
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
 func CreateUser(username, password, name, email string, age int) (*model.User, error) {
@@ -46,7 +47,14 @@ func CreateNewUser(user *model.User) (*model.User, *model.Article, error) { //st
 	return newuser, HelloArticle, nil
 }
 func GetUser(ctx context.Context, id uint) (*model.User, error) {
-	return dao.GetUserByID(ctx, id)
+	u, err := dao.GetUserByID(ctx, id)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, utils.NewAppError(utils.CodeNotFound, "用户不存在")
+		}
+		return nil, err
+	}
+	return u, nil
 }
 func GetUsers(offset, size int) ([]model.User, error) {
 	return dao.GetUsers(offset, size)
