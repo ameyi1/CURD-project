@@ -88,12 +88,18 @@ func CreateNewUser(c *gin.Context) {
 func GetUser(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err1 := strconv.Atoi(idStr)
-	ctx, cancel := context.WithTimeout(c.Request.Context(), 3*time.Second)
-	defer cancel()
 	if err1 != nil {
 		utils.Fail(c, "ID必须是纯数字", utils.CodeForbidden)
 		return
 	}
+	//纯浪费内存如果写ctx，defer下面
+	//先解决授权问题
+	if !utils.CheckOwnership(c, uint(id)) {
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 3*time.Second)
+	defer cancel()
 
 	user, err2 := service.GetUser(ctx, uint(id))
 	if err2 != nil {
@@ -110,7 +116,7 @@ func GetUser(c *gin.Context) {
 
 	utils.Success(c, user, "查询用户信息成功")
 } //查询单个用户
-/*
+/*写重复了
 	func SearchUser(c *gin.Context){
 		idStr:=c.Param("id")
 		id,err1:=strconv.Atoi(idStr)
@@ -144,12 +150,40 @@ func GetUsers(c *gin.Context) {
 		var AppError *utils.AppError
 		if errors.As(err, &AppError) {
 			utils.Fail(c, AppError.Msg, AppError.Code)
+			return
 		} else {
 			utils.Log.Error("查询列表失败", zap.Error(err))
 			utils.Fail(c, "查询列表失败", utils.CodeServerError)
+			return
 		}
 		return
 	}
 	utils.Success(c, list, "查询列表成功")
 
+}
+
+// 登录LoginUser同样，需要获取ctx,username password,然后调用service的登录LoginUser
+func LoginUser(c *gin.Context) {
+	var req struct {
+		Username string `json:"username" binding:"required"`
+		Password string `json:"password" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.Fail(c, "用户名和密码不能为空", utils.CodeInvalidParam)
+		return
+	}
+	if len(req.Password) < 6 {
+		utils.Fail(c, "密码长度不能少于6位", utils.CodeInvalidParam)
+		return
+	}
+	accessToken, refreshToken, user, err := service.LoginUser(c.Request.Context(), req.Username, req.Password)
+	if err != nil {
+		utils.Fail(c, "登录失败", utils.CodeServerError)
+		return
+	}
+	utils.Success(c, gin.H{
+		"access_token":  accessToken,
+		"refresh_token": refreshToken,
+		"user":          user,
+	}, "登录成功")
 }

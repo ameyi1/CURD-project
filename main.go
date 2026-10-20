@@ -47,8 +47,8 @@ func main() {
 	//!!!!!!!!!!!!!!!!!!!!!!!p0级别错误，所有接口都需要token包括登录，造成无限循环|
 	//apiGroup.Use(middleware.AuthMiddleware())                            +  !  +
 	//这个是限流
-	apiGroup.POST("/login", middleware.RateLimit(5, time.Minute), api.GetUser)
-	apiGroup.POST("/user", middleware.RateLimit(5, time.Minute), api.CreateNewUser)
+	apiGroup.POST("/login", middleware.RateLimit(5, time.Minute), api.LoginUser)
+	apiGroup.POST("/users", middleware.RateLimit(5, time.Minute), api.CreateUser) // 公开注册
 	apiGroup.POST("/article/create", middleware.Idempotency(), api.CreateArticle)
 	apiGroup.POST("/refreash", utils.Refrashtoken)
 	// 其他接口
@@ -56,14 +56,14 @@ func main() {
 	authgroup.Use(middleware.AuthMiddleware())
 	api.RegisterUserRoutes(authgroup)
 	//api.RegisterArticleRoutes(apiGroup)
-	api.RegisterUserRoutes(authgroup)
-	//api.RegisterArticleRoutes(apiGroup)
 
+	//api.RegisterArticleRoutes(apiGroup)
+	//Service.StartSyncTask() //这个我还没理清加哪，回头看2026-10-14
 	//==================================================================================
 	//优雅关机
 	//http.Server 没有任何超时（会被 Slowloris 拖死）p0级别错误        这个看不懂，回头看
 	server := &http.Server{
-		Addr:    fmt.Sprintf("%d", config.GlobalConfig.Server.Port),
+		Addr:    fmt.Sprintf(":%d", config.GlobalConfig.Server.Port),
 		Handler: r,
 		//=======================看不懂下面的========================
 		ReadHeaderTimeout: 5 * time.Second,  // 读完请求头的最长时间，防 Slowloris 的核心
@@ -96,6 +96,15 @@ func main() {
 		utils.Log.Warn("关闭失败，准备强制关闭", zap.Error(err))
 		return
 	}
+	//第一步：补全文章 CRUD（更新、删除）
+	//第二步：更新个人资料 + 修改密码
+	//第三步：点赞 + 浏览量
+	//第四步：评论系统（一级 + 二级）
+	//第五步：写测试
+	//第六步：Docker + README
+	//第七步：缓存落地（文章详情）
+	//第八步：标签 / 搜索 / 关注（选一个）
+	//第九步：限流 / 幂等 / Swagger
 
 	// 5. 启动服务
 	//Port := config.GlobalConfig.Server.Port

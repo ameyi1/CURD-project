@@ -8,3 +8,12 @@
 {"level":"info","time":"2026-07-31 22:57:27","msg":"后端服务完成","listen_port":8080}
 {"level":"info","time":"2026-08-02 10:26:20","msg":"后端服务完成","listen_port":8080}
 {"level":"info","time":"2026-08-21 23:02:38","msg":"后端服务完成","listen_port":8080}
+{"level":"info","time":"2026-10-20 15:41:14","msg":"后端服务启动","listen_port":8080}
+{"level":"info","time":"2026-10-20 15:50:04","msg":"http_Request","Method":"POST","Path":"/api/users","clientIP":"::1","statusCode":200,"latency_ms":545}
+{"level":"info","time":"2026-10-20 15:55:13","msg":"http_Request","Method":"POST","Path":"/api/users","clientIP":"127.0.0.1","statusCode":200,"latency_ms":47102}
+{"level":"info","time":"2026-10-20 15:55:34","msg":"http_Request","Method":"POST","Path":"/api/login","clientIP":"127.0.0.1","statusCode":200,"latency_ms":722}
+{"level":"info","time":"2026-10-20 15:59:16","msg":"http_Request","Method":"POST","Path":"/api/login","clientIP":"127.0.0.1","statusCode":200,"latency_ms":508}
+{"level":"info","time":"2026-10-20 16:02:48","msg":"开始尝试关闭..."}
+{"level":"info","time":"2026-10-20 16:03:58","msg":"后端服务启动","listen_port":8080}
+{"level":"info","time":"2026-10-20 16:04:23","msg":"http_Request","Method":"POST","Path":"/api/login","clientIP":"127.0.0.1","statusCode":200,"latency_ms":1626}
+{"level":"info","time":"2026-10-20 16:11:44","msg":"开始尝试关闭..."}

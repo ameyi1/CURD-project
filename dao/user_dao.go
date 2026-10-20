@@ -56,3 +56,13 @@ func GetUsers(offset int, size int) ([]model.User, error) {
 	}
 	return list, nil
 }
+
+// 需要和loginuser对接，根据名字查用户
+func LoginUser(ctx context.Context, username string) (*model.User, error) {
+	var user model.User
+	err := config.DB.WithContext(ctx).Where("username=?", username).First(&user).Error
+	if err != nil {
+		utils.Log.Error("LoginUser-dao:数据库操作失败", zap.Error(err))
+	}
+	return &user, err
+}

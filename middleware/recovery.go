@@ -8,6 +8,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// 这个主要兜住panic，然后stack记录堆栈定位是那个panic
 func GlobalRecovery() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		defer func() {
