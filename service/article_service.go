@@ -57,3 +57,128 @@ func GetArticleDetailWithCache(ctx context.Context, articleID uint) (*model.Arti
 	return article, nil
 }
 
+// 软删
+func DeleteArticle(ctx context.Context, articleID, id uint) error {
+	//要校验下是不是本人
+	//先调用下getarticlebyid
+	article, err := dao.GetArticleByID(ctx, articleID)
+	if err != nil {
+		//先判断下文章存不存在
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+
+			return utils.NewAppError(utils.CodeNotFound, "文章不存在")
+
+		}
+
+		return utils.NewAppError(utils.CodeServerError, "调用dao_getarticlebyid失败")
+
+	}
+	//判断下
+	if id != article.UserID {
+		return utils.NewAppError(utils.CodeForbidden, "用户id不匹配")
+
+	}
+	//再调用删除
+	if err := dao.DeleteArticle(ctx, articleID); err != nil {
+		return utils.NewAppError(utils.CodeServerError, "调用dao_deletearticle失败")
+
+	}
+	return nil
+} //查单个
+func SearchArticle(ctx context.Context, articleID uint) (*model.Article, error) {
+	article, err := dao.SearchArticle(ctx, articleID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil,
+				utils.NewAppError(utils.CodeNotFound, "文章不存在")
+
+		}
+		return nil,
+			utils.NewAppError(utils.CodeServerError, "查询文章失败")
+
+	}
+	return article, nil
+}
+
+// 点赞,有原子性问题没解决2026-10-14
+func LikeArticle(ctx context.Context, ArticleID uint, UserID uint) error {
+	//先设置key,设置两个key，一个记录点赞用户id，一个记录点赞次数
+	userSetkey := fmt.Sprintf("like:user_id:%d", ArticleID)
+	countkey := fmt.Sprintf("like:count_id:%d", ArticleID)
+	//然后set通过redis，也就是存内存里
+	added, err := config.RedisClient.SAdd(ctx, userSetkey, UserID).Result()
+	//先判断added的情况，如果为零就说明重复点赞，这是redis里面set（无序，不重复）的功能去重，重复返回0
+	if added == 0 {
+		return utils.NewAppError(utils.CodeForbidden, "不能重复点赞")
+	}
+	if err != nil {
+		return utils.NewAppError(utils.CodeServerError, "出错了请重试")
+
+	}
+	if err := config.RedisClient.Incr(ctx, countkey).Err(); err != nil {
+		return err
+	}
+	return nil
+} //取消点赞，和点赞几乎一样，无非是srem，decr
+func UnlikeArticle(ctx context.Context, ArticleID uint, UserID uint) error {
+	//同样先设置key
+	usersetkey := fmt.Sprintf("like:user_id:%d", ArticleID)
+	countkey := fmt.Sprintf("like:count:%d", ArticleID)
+	removed, err := config.RedisClient.SRem(ctx, usersetkey, UserID).Result()
+	if removed == 0 {
+		return utils.NewAppError(utils.CodeInvalidParam, "不能重复取消点赞")
+	}
+	if err != nil {
+		return utils.NewAppError(utils.CodeServerError, "出错了请重新再试")
+
+	}
+	if err := config.RedisClient.Decr(ctx, countkey).Err(); err != nil {
+		return err
+	}
+	return nil
+}
+
+// 查询用户是否点赞
+func IsLike(ctx context.Context, UserID uint, ArticleID uint) error {
+	//同样的先设置key
+	usersetKey := fmt.Sprintf("like:user_id:%d", ArticleID)
+	err := config.RedisClient.SIsMember(ctx, usersetKey, UserID).Err()
+	if err != nil {
+		return utils.NewAppError(utils.CodeServerError, "出错了请重试")
+	}
+	return nil
+}
+
+// 查询点赞个数
+func GetLikeCount(ctx context.Context, ArticleID uint) (int64, error) {
+	countkey := fmt.Sprintf("like:count:%d", ArticleID)
+	count, err := config.RedisClient.Get(ctx, countkey).Int64()
+	if err == redis.Nil {
+		return 0, nil
+	}
+	if err != nil {
+		return 0, utils.NewAppError(utils.CodeServerError, "查询失败")
+	}
+	return count, nil
+}
+
+// 写个文章浏览量吧,相当于简化的点赞系统，不用去重和获取用户id
+func Addview(ctx context.Context, articleID uint) {
+	key := fmt.Sprintf("view:count:%d", articleID)
+	err := config.RedisClient.Incr(ctx, key).Err()
+	if err != nil {
+		utils.Log.Error("浏览量增加失败", zap.Error(err))
+	}
+
+}
+func GetViewCount(ctx context.Context, articleID uint) (int64, error) {
+	countkey := fmt.Sprintf("view:count:%d", articleID)
+	Count, err := config.RedisClient.Get(ctx, countkey).Int64()
+	if err == redis.Nil { //key不存在，说明没人看过，正常现象，不是错误
+		return 0, nil
+	}
+	if err != nil {
+		return 0, utils.NewAppError(utils.CodeServerError, "查询浏览量失败")
+	}
+	return Count, nil
+}
