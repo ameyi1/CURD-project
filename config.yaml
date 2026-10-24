@@ -11,6 +11,7 @@ mysql:
   dbname: gin-study.db
 
 # JWT配置
+
 jwt:
-  secret: Ameyi   # 你之前写的 jwtKey 密钥
+  secret: w32yzixUhWd1B4VIFRGA8YO07qDpmnuk  # 之前写的 jwtKey 密钥ameyi太脆弱了，必须生成至少32随机字符
   expire: 24      # 你之前写的 24小时过期

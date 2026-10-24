@@ -3,6 +3,7 @@ package utils
 import (
 	"context"
 	"errors"
+	"fmt"
 	"gin-study/config"
 
 	"time"
@@ -64,6 +65,10 @@ func GenerateToken(userID uint) (accesstoken, refreashtoken string, err error) {
 func ParseToken(accesstoken string) (uint, error) {
 	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(accesstoken, claims, func(t *jwt.Token) (interface{}, error) {
+		//只接受 HMAC 系列算法，防止alg.none攻击
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("不支持的签名算法: %v", t.Header["alg"])
+		}
 		return []byte(config.GlobalConfig.Jwt.Secret), nil
 	})
 	if err != nil {
