@@ -14,6 +14,20 @@ import (
 	"go.uber.org/zap"
 )
 
+// RegisterArticleRoutes 注册文章相关路由
+func RegisterArticleRoutes(r *gin.RouterGroup) {
+	r.POST("/articles", CreateArticle)             // 发布
+	r.GET("/articles/:id", GetArticle)             // 查详情（走缓存）
+	r.GET("/articles", ListArticles)               // 分页列表
+	r.PUT("/articles/:id", UpdateArticle)          // 修改
+	r.DELETE("/articles/:id", DeleteArticle)       // 删除
+	r.POST("/articles/:id/like", LikeArticle)      // 点赞
+	r.DELETE("/articles/:id/like", UnlikeArticle)  // 取消点赞
+	r.GET("/articles/:id/like", IsLike)            // 查点赞状态
+	r.GET("/articles/:id/likecount", GetLikeCount) //查点赞总数
+	r.POST("/articles/:id/view", GetViewCount)     // 浏览量 +1
+}
+
 // 增
 func CreateArticle(c *gin.Context) {
 	userID, exists := c.Get("userID")
@@ -95,6 +109,70 @@ func SearchArticle(c *gin.Context) {
 	}
 
 	utils.Success(c, gin.H{"id": articleID}, "查询文章成功")
+}
+
+// 旁路缓存 查
+func GetArticle(c *gin.Context) {
+	ctx := c.Request.Context()
+	articleIDStr := c.Param("articleID")
+	articleID, _ := strconv.Atoi(articleIDStr)
+	service.GetArticleDetailWithCache(ctx, uint(articleID))
+}
+
+// 查 分页
+func ListArticles(c *gin.Context) {
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	size, _ := strconv.Atoi(c.DefaultQuery("size", "10"))
+	keyword := c.Query("keyword")
+	if page < 1 {
+		page = 1
+	}
+	if size < 1 || size > 50 {
+		size = 10
+	}
+	// 传给service
+	ctx := c.Request.Context()
+	list, total, err := service.ListArticles(ctx, keyword, page, size)
+	if err != nil {
+		utils.HandleError(c, "获取文章列表失败", err)
+		return
+	}
+	utils.Success(c, gin.H{
+		"list":  list,
+		"total": total,
+		"page":  page,
+		"size":  size,
+	}, "查询成功")
+
+}
+
+// 改
+func UpdateArticle(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		utils.Fail(c, "文章ID必须是数字", utils.CodeInvalidParam)
+		return
+	}
+	userID := c.GetUint("userID")
+	var req struct {
+		Title   string `json:"title" binding:"required,max=100"`
+		Content string `json:"content" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.Fail(c, "参数错误："+err.Error(), utils.CodeInvalidParam)
+		return
+	}
+	if err := service.UpdateArticle(c.Request.Context(), uint(id), userID, req.Title, req.Content); err != nil {
+		var appErr *utils.AppError
+		if errors.As(err, &appErr) {
+			utils.Fail(c, appErr.Msg, appErr.Code)
+		} else {
+			utils.Log.Error("更新文章失败", zap.Error(err))
+			utils.Fail(c, "更新失败", utils.CodeServerError)
+		}
+		return
+	}
+	utils.Success(c, nil, "更新成功")
 }
 
 // 点赞
@@ -218,4 +296,29 @@ func GetViewCount(c *gin.Context) {
 
 }
 
-//没招了，为什么要旧数据，纯脱裤子放屁
+// 没招了，为什么要旧数据，纯脱裤子放屁
+func IsLike(c *gin.Context) {
+	ctx := c.Request.Context()
+	userIDstr := c.Param("userID")
+	articleIDStr := c.Param("articleID")
+	userID, _ := strconv.Atoi(userIDstr)
+	articleID, _ := strconv.Atoi(articleIDStr)
+	if err := service.IsLike(ctx, uint(userID), uint(articleID)); err != nil {
+		utils.HandleError(c, "查询点赞状态失败", err)
+		return
+	}
+}
+func GetLikeCount(c *gin.Context) {
+	ctx := c.Request.Context()
+	articleIDStr := c.Param("articleID")
+	articleID, _ := strconv.Atoi(articleIDStr)
+	total, err := service.GetLikeCount(ctx, uint(articleID))
+	if err != nil {
+		utils.HandleError(c, "查询点赞总数失败", err)
+		return
+	}
+	utils.Success(c, gin.H{
+		"total":     total,
+		"articleID": articleID,
+	}, "查询成功")
+}

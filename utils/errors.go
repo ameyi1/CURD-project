@@ -1,5 +1,12 @@
 package utils
 
+import (
+	"errors"
+
+	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
+)
+
 const (
 	CodeSuccess = 200
 
@@ -32,4 +39,21 @@ func (e *AppError) Error() string {
 // 制造一个业务错误模板service用
 func NewAppError(code int, msg string) error {
 	return &AppError{Code: code, Msg: msg}
+}
+func HandleError(c *gin.Context, defaultMsg string, err error) {
+	//防御性判断
+	if err == nil {
+		return
+	}
+	var appErr *AppError
+	//业务错误
+	if errors.As(err, &appErr) {
+		Fail(c, appErr.Msg, appErr.Code)
+		return
+
+	}
+	//系统错误
+	Log.Error("系统异常", zap.String("path", c.Request.URL.Path), zap.String("method", c.Request.Method), zap.Error(err))
+	Fail(c, defaultMsg, CodeServerError)
+
 }

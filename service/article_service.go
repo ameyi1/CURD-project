@@ -100,6 +100,42 @@ func SearchArticle(ctx context.Context, articleID uint) (*model.Article, error) 
 	return article, nil
 }
 
+// 查分页
+func ListArticles(ctx context.Context, keyword string, page, size int) ([]model.Article, int64, error) {
+	offset := (page - 1) * size
+	article, total, err := dao.ListArticles(ctx, keyword, offset, size)
+	if err != nil {
+		return nil, 0, fmt.Errorf("分页查文章失败%s,%d,%d:%w", keyword, page, size, &err)
+	}
+	return article, total, nil
+}
+
+// 改，先校验归属，再改，最后删缓存
+func UpdateArticle(ctx context.Context, articleID, userID uint, title, context string) error {
+	article, err := dao.GetArticleByID(ctx, articleID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return utils.NewAppError(utils.CodeNotFound, "文章不存在")
+		}
+		return fmt.Errorf("查询文章失败articleID=%d:%w", articleID, err)
+	}
+	if article.UserID != userID {
+		return utils.NewAppError(utils.CodeForbidden, "无权操作别人的文章")
+	}
+	if err := dao.UpdateArticle(ctx, title, context, articleID); err != nil {
+		return fmt.Errorf("更新文章记录失败 articleID=%d: %w", articleID, err)
+	}
+	//删缓存
+	if err := config.RedisClient.Del(ctx, keyArticleDetail(articleID)).Err(); err != nil {
+		utils.Log.Warn("删除文章缓存失败", zap.Uint("article_id", articleID), zap.Error(err))
+	}
+	return nil
+}
+
+func keyArticleDetail(articleID uint) string {
+	panic("unimplemented")
+}
+
 // 点赞,有原子性问题没解决2026-10-14
 func LikeArticle(ctx context.Context, ArticleID uint, UserID uint) error {
 	//先设置key,设置两个key，一个记录点赞用户id，一个记录点赞次数
@@ -170,7 +206,7 @@ func Addview(ctx context.Context, articleID uint) {
 		utils.Log.Error("浏览量增加失败", zap.Error(err))
 	}
 
-}
+} //查询浏览量
 func GetViewCount(ctx context.Context, articleID uint) (int64, error) {
 	countkey := fmt.Sprintf("view:count:%d", articleID)
 	Count, err := config.RedisClient.Get(ctx, countkey).Int64()
