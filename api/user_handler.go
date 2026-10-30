@@ -147,7 +147,7 @@ func GetUsers(c *gin.Context) {
 	offset := (page - 1) * size
 	list, err := service.GetUsers(offset, size)
 	if err != nil {
-		var AppError *utils.AppError
+		/*var AppError *utils.AppError
 		if errors.As(err, &AppError) {
 			utils.Fail(c, AppError.Msg, AppError.Code)
 			return
@@ -156,6 +156,8 @@ func GetUsers(c *gin.Context) {
 			utils.Fail(c, "查询列表失败", utils.CodeServerError)
 			return
 		}
+		*/
+		utils.HandleError(c, "查询列表失败", err)
 		return
 	}
 	utils.Success(c, list, "查询列表成功")

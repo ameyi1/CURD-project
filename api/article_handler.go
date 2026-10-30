@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"errors"
-	"gin-study/config"
 	"gin-study/model"
 	"gin-study/service"
 	"gin-study/utils"
@@ -48,23 +47,24 @@ func CreateArticle(c *gin.Context) {
 		utils.Fail(c, "参数错误："+err.Error())
 		return
 	}
-
+	ctx := c.Request.Context()
 	article.UserID = uid
-	if err := config.DB.Create(&article).Error; err != nil {
-		utils.Log.Error("发布文章失败:", zap.Error(err))
-		utils.Fail(c, "发布文章失败："+err.Error())
+	if err := service.CreateArticle(ctx, article, uid); err != nil {
+		//utils.Log.Error("发布文章失败:", zap.Error(err))
+		//utils.Fail(c, "发布文章失败："+err.Error())
+		utils.HandleError(c, "创建文章失败", err)
 		return
 	}
 
 	utils.Success(c, article, "发布文章成功")
-	utils.Log.Info("发布文章成功", zap.String("title", article.Title), zap.Uint("userID", article.UserID), zap.Uint("articleID", article.ID))
+	//utils.Log.Info("发布文章成功", zap.String("title", article.Title), zap.Uint("userID", article.UserID), zap.Uint("articleID", article.ID))
 }
 
 // 删
 func DeleteArticle(c *gin.Context) {
 	//先从URL里面获取文章id
-	idStr := c.Param("id")
-	articleID, err := strconv.Atoi(idStr)
+	articleIDStr := c.Param("articleID")
+	articleID, err := strconv.Atoi(articleIDStr)
 	if err != nil {
 		utils.Fail(c, "文章id必须为数字", utils.CodeInvalidParam)
 		return
@@ -225,19 +225,21 @@ func UnlikeArticle(c *gin.Context) {
 	userID := c.GetUint("userID")
 	ctx := c.Request.Context()
 	if err := service.UnlikeArticle(ctx, uint(articleID), userID); err != nil {
-		var appErr *utils.AppError
+		/*var appErr *utils.AppError
 		if errors.As(err, &appErr) {
 			utils.Fail(c, appErr.Msg, appErr.Code)
 		} else {
 			utils.Log.Error("取消点赞失败", zap.Error(err))
 			utils.Fail(c, "服务器内部错误", utils.CodeServerError)
-		}
+		}*/
+		utils.HandleError(c, "取消点赞失败", err)
 		return
 	}
 	count, err := service.GetLikeCount(ctx, uint(articleID))
 	if err != nil {
-		utils.Log.Error("查询点赞个数失败", zap.Error(err))
-		utils.Fail(c, "服务器内部错误", utils.CodeServerError)
+		//utils.Log.Error("查询点赞个数失败", zap.Error(err))
+		//utils.Fail(c, "服务器内部错误", utils.CodeServerError)
+		utils.HandleError(c, "查询点赞个数失败", err)
 		return
 	}
 	utils.Success(c, gin.H{"like_count": count}, "取消点赞成功")
@@ -248,14 +250,15 @@ func GetViewCount(c *gin.Context) {
 	idstr := c.Param("articleID")
 	articleID, err := strconv.Atoi(idstr)
 	if err != nil {
-		utils.Fail(c, "必须是纯数字", utils.CodeServerError)
+		utils.Fail(c, "必须是纯数字", utils.CodeInvalidParam)
 
 	}
 	//先查文章浏览总数
 	ctx := c.Request.Context()
 	count, err := service.GetViewCount(ctx, uint(articleID))
 	if err != nil {
-		var appErr *utils.AppError
+		utils.HandleError(c, "获取浏览量失败", err)
+		/*var appErr *utils.AppError
 		if !errors.As(err, *appErr) {
 			utils.Log.Error("获取浏览量失败", zap.Error(err))
 			utils.Fail(c, appErr.Msg, appErr.Code)
@@ -265,7 +268,7 @@ func GetViewCount(c *gin.Context) {
 			utils.Log.Error("获取浏览量错误", zap.Error(err))
 			utils.Fail(c, "获取浏览量失败", utils.CodeServerError)
 			return
-		}
+		}*/
 		//然后增加浏览量的话再开一个携程吧，要不然浏览量增加还要堵人有点那啥了
 		//不行，别开，有点不值得一个获取浏览量的东西，而且，context，background高并发直接会导致携程数量爆炸
 
@@ -275,8 +278,9 @@ func GetViewCount(c *gin.Context) {
 	// 4. 获取最新浏览量
 	Count, err := service.GetViewCount(ctx, uint(articleID))
 	if err != nil {
-		var appErr *utils.AppError
-		if !errors.As(err, *appErr) {
+		//var appErr *utils.AppError
+		utils.HandleError(c, "获取浏览量失败", err)
+		/*if !errors.As(err, *appErr) {
 			utils.Log.Error("获取浏览量失败", zap.Error(err))
 			utils.Fail(c, appErr.Msg, appErr.Code)
 			return
@@ -285,7 +289,7 @@ func GetViewCount(c *gin.Context) {
 			utils.Log.Error("获取浏览量错误", zap.Error(err))
 			utils.Fail(c, "获取浏览量失败", utils.CodeServerError)
 			return
-		}
+		}*/
 	}
 	// 5. 返回
 	utils.Success(c, gin.H{

@@ -18,6 +18,15 @@ import (
 	"gorm.io/gorm"
 )
 
+// 增
+func CreateArticle(ctx context.Context, article model.Article, userID uint) error {
+	if err := dao.CreateArticle(&article); err != nil {
+		return fmt.Errorf("创建文章失败(userID=%d,articleID=%d,title=%s):%w", userID, article.ID, article.Title, err)
+	}
+	utils.Log.Info("增加文章成功", zap.Uint("userID", userID), zap.Uint("articleID", article.ID), zap.String("title", article.Title))
+	return nil
+}
+
 // GetArticleDetailWithCache 按缓存旁路模式查询文章
 func GetArticleDetailWithCache(ctx context.Context, articleID uint) (*model.Article, error) {
 	key := fmt.Sprintf("article:detail:%d", articleID)
@@ -105,7 +114,7 @@ func ListArticles(ctx context.Context, keyword string, page, size int) ([]model.
 	offset := (page - 1) * size
 	article, total, err := dao.ListArticles(ctx, keyword, offset, size)
 	if err != nil {
-		return nil, 0, fmt.Errorf("分页查文章失败%s,%d,%d:%w", keyword, page, size, &err)
+		return nil, 0, fmt.Errorf("分页查文章失败(keyword=%s,page=%d,size=%d):%w", keyword, page, size, err)
 	}
 	return article, total, nil
 }

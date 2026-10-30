@@ -2,7 +2,7 @@ package model
 
 import "gorm.io/gorm"
 
-type Article struct {
+type Article struct { //自带id不用在家articleID了
 	gorm.Model
 	Title     string `json:"title" gorm:"index"`
 	Context   string `json:"context"`

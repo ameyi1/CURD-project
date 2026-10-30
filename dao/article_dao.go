@@ -8,9 +8,11 @@ import (
 )
 
 func CreateArticle(article *model.Article) error {
-	return config.DB.Create(article).Error
+	if err := config.DB.Create(article).Error; err != nil {
+		return err
+	}
+	return nil
 }
-
 func GetArticleByID(ctx context.Context, id uint) (*model.Article, error) {
 	var article model.Article
 	if err := config.DB.WithContext(ctx).First(&article, id).Error; err != nil {
