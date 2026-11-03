@@ -63,6 +63,7 @@ func GetArticleDetailWithCache(ctx context.Context, articleID uint) (*model.Arti
 	if err := config.RedisClient.Set(ctx, key, data, expire).Err(); err != nil {
 		utils.Log.Warn("写入文章缓存失败", zap.Uint("article_id", articleID), zap.Error(err))
 	}
+	utils.Log.Info("查询旁路查询文章成功", zap.Uint("articleID", articleID))
 	return article, nil
 }
 
@@ -79,7 +80,8 @@ func DeleteArticle(ctx context.Context, articleID, id uint) error {
 
 		}
 
-		return utils.NewAppError(utils.CodeServerError, "调用dao_getarticlebyid失败")
+		return fmt.Errorf("查询文章信息失败(articleID%d):%w", articleID, err)
+		//utils.NewAppError(utils.CodeServerError, "调用dao_getarticlebyid失败")
 
 	}
 	//判断下
@@ -89,9 +91,11 @@ func DeleteArticle(ctx context.Context, articleID, id uint) error {
 	}
 	//再调用删除
 	if err := dao.DeleteArticle(ctx, articleID); err != nil {
-		return utils.NewAppError(utils.CodeServerError, "调用dao_deletearticle失败")
+		return fmt.Errorf("删除文章失败(articleID=%d):%w", articleID, err)
+		//utils.NewAppError(utils.CodeServerError, "调用dao_deletearticle失败")
 
 	}
+	utils.Log.Info("删除文章成功", zap.Uint("articleID", articleID), zap.Uint("userID", id))
 	return nil
 } //查单个
 func SearchArticle(ctx context.Context, articleID uint) (*model.Article, error) {
@@ -103,7 +107,8 @@ func SearchArticle(ctx context.Context, articleID uint) (*model.Article, error) 
 
 		}
 		return nil,
-			utils.NewAppError(utils.CodeServerError, "查询文章失败")
+			fmt.Errorf("查询文章失败(articleID%d):%w", articleID, err)
+		//utils.NewAppError(utils.CodeServerError, "查询文章失败")
 
 	}
 	return article, nil

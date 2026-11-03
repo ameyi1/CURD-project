@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"errors"
 	"gin-study/model"
 	"gin-study/service"
 	"gin-study/utils"
@@ -83,7 +82,7 @@ func DeleteArticle(c *gin.Context) {
 
 	//调用service_deleteArticle
 	if err := service.DeleteArticle(ctx, uint(articleID), userID); err != nil {
-		var appError *utils.AppError
+		/*var appError *utils.AppError
 		//判断下是什么错误
 		if errors.As(err, &appError) {
 			//如何这个as的返回值bool的结果是true，传给前端，是业务错误,不用手动填了
@@ -93,7 +92,8 @@ func DeleteArticle(c *gin.Context) {
 			utils.Log.Error("删除文章失败", zap.Error(err))
 			utils.Fail(c, "删除文章失败", utils.CodeServerError)
 
-		}
+		}*/
+		utils.HandleError(c, "删除文章失败", err)
 		return
 	}
 	utils.Success(c, nil, "成功删除文章")
@@ -163,13 +163,14 @@ func UpdateArticle(c *gin.Context) {
 		return
 	}
 	if err := service.UpdateArticle(c.Request.Context(), uint(id), userID, req.Title, req.Content); err != nil {
-		var appErr *utils.AppError
+		/*var appErr *utils.AppError
 		if errors.As(err, &appErr) {
 			utils.Fail(c, appErr.Msg, appErr.Code)
 		} else {
 			utils.Log.Error("更新文章失败", zap.Error(err))
 			utils.Fail(c, "更新失败", utils.CodeServerError)
-		}
+		}*/
+		utils.HandleError(c, "更新文章失败", err)
 		return
 	}
 	utils.Success(c, nil, "更新成功")
@@ -188,27 +189,29 @@ func LikeArticle(c *gin.Context) {
 	//调用service
 	ctx := c.Request.Context()
 	if err := service.LikeArticle(ctx, uint(articleID), userID); err != nil {
-		var appErr *utils.AppError
+		/*var appErr *utils.AppError
 		if errors.As(err, &appErr) {
 			utils.Fail(c, appErr.Msg, appErr.Code)
 		} else {
 			utils.Log.Error("点赞失败", zap.Error(err))
 			utils.Fail(c, "服务器内部错误", utils.CodeServerError)
 
-		}
+		}*/
+		utils.HandleError(c, "点赞失败", err)
 		return
 	}
 	//调用service的点赞计数
 	count, err := service.GetLikeCount(ctx, uint(articleID))
 	if err != nil {
-		var appErr *utils.AppError
+		/*var appErr *utils.AppError
 		if errors.As(err, &appErr) {
 			utils.Fail(c, appErr.Msg, appErr.Code)
 		} else {
 			utils.Log.Error("查询点赞个数失败", zap.Error(err))
 			utils.Fail(c, "服务器内部错误", utils.CodeServerError)
 
-		}
+		}*/
+		utils.HandleError(c, "查询点赞个数失败", err)
 		return
 	}
 
