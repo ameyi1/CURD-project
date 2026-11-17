@@ -53,7 +53,11 @@ func HandleError(c *gin.Context, defaultMsg string, err error) {
 
 	}
 	//系统错误
-	Log.Error("系统异常", zap.String("path", c.Request.URL.Path), zap.String("method", c.Request.Method), zap.Error(err))
+	Log.Error("系统异常",
+		zap.String("action", defaultMsg),
+		zap.String("path", c.Request.URL.Path),
+		zap.String("method", c.Request.Method),
+		zap.Error(err))
 	Fail(c, defaultMsg, CodeServerError)
 
 }

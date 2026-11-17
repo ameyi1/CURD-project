@@ -6,7 +6,7 @@ type Article struct { //自带id不用在家articleID了
 	gorm.Model
 	Title        string `json:"title" gorm:"index"`
 	Context      string `json:"context"`
-	UserID       uint   `json:"userid" gorm:"index"`
-	LikeCount    uint   `json:"likecount" gorm:"default:0"`
-	CommentCount uint   `json:"commentcount" gorm:"default:0"`
+	UserID       uint   `json:"user_id" gorm:"index"`
+	LikeCount    uint   `json:"like_count" gorm:"default:0"`
+	CommentCount uint   `json:"comment_count" gorm:"default:0"`
 }

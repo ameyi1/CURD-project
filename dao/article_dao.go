@@ -13,9 +13,9 @@ func CreateArticle(article *model.Article) error {
 	}
 	return nil
 }
-func GetArticleByID(ctx context.Context, id uint) (*model.Article, error) {
+func GetArticleByID(ctx context.Context, articleID uint) (*model.Article, error) {
 	var article model.Article
-	if err := config.DB.WithContext(ctx).First(&article, id).Error; err != nil {
+	if err := config.DB.WithContext(ctx).First(&article, articleID).Error; err != nil {
 		return nil, err
 	}
 	return &article, nil
